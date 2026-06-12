@@ -10,12 +10,19 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
-  const handleLogout = () => {
+  const triggerLogoutConfirm = () => {
+    closeMenu();
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
     logout();
+    setShowLogoutConfirm(false);
     closeMenu();
     navigate("/");
   };
@@ -83,19 +90,20 @@ export default function Navbar() {
               <div className="flex items-center space-x-4">
                 <Link
                   to="/profile"
-                  className="flex items-center space-x-1 py-1.5 px-3.5 bg-sand/50 hover:bg-sand rounded-full text-xs font-medium text-ink transition"
+                  className="relative w-9 h-9 rounded-full bg-sand/50 hover:bg-sand flex items-center justify-center text-ink transition-all duration-200 border border-sand hover:scale-105"
+                  title={`Profile: ${user.name}`}
                 >
-                  <UserIcon className="w-3.5 h-3.5 mr-1 text-olive" />
-                  <span>{user.name}</span>
+                  <UserIcon className="w-4.5 h-4.5 text-olive" />
                   {isAdmin && (
-                    <span className="ml-1.5 bg-olive/15 text-olive text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold">
-                      ADMIN
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-white"></span>
                     </span>
                   )}
                 </Link>
 
                 <button
-                  onClick={handleLogout}
+                  onClick={triggerLogoutConfirm}
                   className="p-2 text-stone-500 hover:text-red-650 rounded-full hover:bg-sand/30 transition-colors"
                   title="Logout Session"
                 >
@@ -197,7 +205,7 @@ export default function Navbar() {
                   Profile Details ({user.name})
                 </Link>
                 <button
-                  onClick={handleLogout}
+                  onClick={triggerLogoutConfirm}
                   className="block w-full text-left px-3 py-2 text-base font-medium rounded-lg text-red-650 hover:bg-red-50"
                 >
                   Log Out
@@ -221,6 +229,56 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Elegant Session Logout Confirmation Overlay */}
+      {showLogoutConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999]"
+          id="logout-confirmation-overlay"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl border border-gray-100 max-w-sm w-full p-6 shadow-2xl space-y-6 text-center transition-all duration-300 transform scale-100 animate-fade-in"
+            id="logout-confirmation-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Icon Tray */}
+            <div className="mx-auto w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center border border-red-150">
+              <LogOut className="w-5 h-5" />
+            </div>
+
+            {/* Title & Narrative content */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-serif font-bold text-gray-900" id="confirm-logout-title">
+                Log Out of Aura?
+              </h3>
+              <p className="text-xs text-stone-500 leading-relaxed font-sans px-2">
+                You are about to terminate your active shopping and administration session. Any unsaved actions may require signing in again to resume.
+              </p>
+            </div>
+
+            {/* Layout buttons */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-3 px-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-800 text-xs font-bold rounded-2xl transition cursor-pointer active:scale-98"
+                id="cancel-logout-btn"
+              >
+                Keep Session
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-2xl transition cursor-pointer active:scale-98 shadow-sm"
+                id="do-logout-btn"
+              >
+                Yes, Log Out
+              </button>
+            </div>
           </div>
         </div>
       )}
