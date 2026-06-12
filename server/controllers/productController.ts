@@ -167,6 +167,8 @@ export async function createProduct(
         "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80";
     }
 
+    const userEmail = (req as any).user?.email || "admin@auracuration.com";
+
     const newProduct = await Product.create({
       title,
       description,
@@ -174,6 +176,7 @@ export async function createProduct(
       category,
       stock: stock !== undefined ? Number(stock) : 10,
       image: imageUrl,
+      createdBy: userEmail,
     });
 
     res.status(201).json(newProduct);

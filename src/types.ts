@@ -15,6 +15,7 @@ export interface Product {
   category: string;
   image: string;
   stock: number;
+  createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
 }

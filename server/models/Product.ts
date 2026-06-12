@@ -9,6 +9,7 @@ const ProductSchema = new Schema(
     category: { type: String, required: true, index: true },
     image: { type: String, required: true },
     stock: { type: Number, required: true, default: 0 },
+    createdBy: { type: String, default: "system" },
   },
   {
     timestamps: true,
