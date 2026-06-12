@@ -1,0 +1,6 @@
+{
+  "name": "MERN E-Commerce MVP",
+  "description": "A complete full-stack MERN (MongoDB, Express, React, Node) E-Commerce Minimum Viable Product application with product CRUD, category browsing, cart management, and JWT auth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
