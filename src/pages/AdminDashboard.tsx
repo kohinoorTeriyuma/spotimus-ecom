@@ -41,68 +41,6 @@ interface Order {
   status: "Processing" | "Shipped" | "Delivered";
 }
 
-// Base mock orders to make the dashboard look gorgeous on first load if no orders exist yet
-const INITIAL_DEMO_ORDERS = [
-  {
-    orderId: "ORD-9128-44",
-    customerName: "Alex Vance",
-    customerEmail: "alex@minimalism.io",
-    items: [
-      {
-        productId: "demo-1",
-        title: "Aura Premium Speckled Vase",
-        price: 89.0,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80",
-      },
-      {
-        productId: "demo-2",
-        title: "Minimal Solid Timber Stool",
-        price: 240.0,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1503602642458-232111445657?w=600&auto=format&fit=crop&q=80",
-      }
-    ],
-    createdAt: new Date(Date.now() - 36*3600*1000).toISOString(), // 36 hours ago
-    totalAmount: 329.0,
-    status: "Shipped" as const,
-  },
-  {
-    orderId: "ORD-4191-88",
-    customerName: "Sarah Jenkins",
-    customerEmail: "sarah.j@designstudio.com",
-    items: [
-      {
-        productId: "demo-3",
-        title: "Matte Alabaster Scented Candle",
-        price: 45.0,
-        quantity: 2,
-        image: "https://images.unsplash.com/photo-1508669232496-137b159c1cdb?w=600&auto=format&fit=crop&q=80",
-      }
-    ],
-    createdAt: new Date(Date.now() - 12*3600*1000).toISOString(), // 12 hours ago
-    totalAmount: 90.0,
-    status: "Processing" as const,
-  },
-  {
-    orderId: "ORD-7281-12",
-    customerName: "Liam Sterling",
-    customerEmail: "l.sterling@techcorp.org",
-    items: [
-      {
-        productId: "demo-4",
-        title: "Monochrome Cotton Rib Bedset",
-        price: 185.0,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80",
-      }
-    ],
-    createdAt: new Date(Date.now() - 84*3600*1000).toISOString(), // ~3.5 days ago
-    totalAmount: 185.0,
-    status: "Delivered" as const,
-  }
-];
-
 export default function AdminDashboard() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -130,9 +68,7 @@ export default function AdminDashboard() {
       if (storedOrdersStr) {
         setOrders(JSON.parse(storedOrdersStr));
       } else {
-        // Populate defaults to look beautiful and active
-        localStorage.setItem("aura_completed_orders", JSON.stringify(INITIAL_DEMO_ORDERS));
-        setOrders(INITIAL_DEMO_ORDERS);
+        setOrders([]);
       }
     } catch (err) {
       console.error("Dashboard loaded error:", err);
@@ -181,22 +117,41 @@ export default function AdminDashboard() {
   };
 
   // Calculations
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const completedOrdersCount = orders.length;
+  // Filter products to ONLY include those posted by the admin (excluding mock/seed products)
+  const adminProducts = products.filter((p) => p.createdBy && p.createdBy !== "system");
+
+  // Keep orders that are not mock orders, and filter their items to only include admin's posted products
+  const realOrders = orders
+    .filter((o) => !["ORD-9128-44", "ORD-4191-88", "ORD-7281-12"].includes(o.orderId))
+    .map((o) => {
+      const adminItems = o.items.filter((item) =>
+        adminProducts.some((ap) => (ap._id || ap.id) === item.productId)
+      );
+      const totalAmount = adminItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      return {
+        ...o,
+        items: adminItems,
+        totalAmount,
+      };
+    })
+    .filter((o) => o.items.length > 0);
+
+  const totalRevenue = realOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const completedOrdersCount = realOrders.length;
   const averageOrderValue = completedOrdersCount > 0 ? totalRevenue / completedOrdersCount : 0;
   
   // Units remaining
-  const totalStockUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
+  const totalStockUnits = adminProducts.reduce((sum, p) => sum + (p.stock || 0), 0);
   
   // Inventory value (price * stock)
-  const totalInventoryValue = products.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
+  const totalInventoryValue = adminProducts.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
 
   // Number of low stock products (less than 5 stock)
-  const lowStockCount = products.filter((p) => p.stock !== undefined && p.stock < 5).length;
+  const lowStockCount = adminProducts.filter((p) => p.stock !== undefined && p.stock < 5).length;
 
   // Compute Units Sold per product dynamically based on orders
   const productSalesMap: Record<string, number> = {};
-  orders.forEach((o) => {
+  realOrders.forEach((o) => {
     o.items.forEach((item) => {
       productSalesMap[item.productId] = (productSalesMap[item.productId] || 0) + item.quantity;
     });
@@ -206,14 +161,14 @@ export default function AdminDashboard() {
   const categorySalesMap: Record<string, number> = {};
   const categoryCountMap: Record<string, number> = {};
   
-  products.forEach((p) => {
+  adminProducts.forEach((p) => {
     categoryCountMap[p.category] = (categoryCountMap[p.category] || 0) + 1;
   });
 
-  orders.forEach((o) => {
+  realOrders.forEach((o) => {
     o.items.forEach((item) => {
       // Find the category of the item
-      const linkedProduct = products.find((p) => (p._id || p.id) === item.productId);
+      const linkedProduct = adminProducts.find((p) => (p._id || p.id) === item.productId);
       const cat = linkedProduct ? linkedProduct.category : "Design Essentials";
       categorySalesMap[cat] = (categorySalesMap[cat] || 0) + (item.price * item.quantity);
     });
@@ -225,7 +180,7 @@ export default function AdminDashboard() {
     .sort((a, b) => b.revenue - a.revenue);
 
   // Filter orders
-  const filteredOrders = orders.filter((o) => {
+  const filteredOrders = realOrders.filter((o) => {
     const matchesSearch =
       o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -302,7 +257,7 @@ export default function AdminDashboard() {
                   <p className="text-2xl font-serif font-extrabold text-gray-900 mt-1">${totalRevenue.toFixed(2)}</p>
                   <div className="flex items-center gap-1 mt-1 text-[11px] text-emerald-600 font-mono">
                     <TrendingUp className="w-3 h-3" />
-                    <span>+100% (Simulation)</span>
+                    <span>Live Tracking</span>
                   </div>
                 </div>
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full -mr-8 -mt-8" />
@@ -425,10 +380,10 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex-grow mt-5 space-y-3 max-h-[250px] overflow-y-auto pr-1">
-                  {products.length === 0 ? (
+                  {adminProducts.length === 0 ? (
                     <div className="py-10 text-center text-xs text-gray-400">No active products to trace.</div>
                   ) : (
-                    products
+                    adminProducts
                       .map((p) => ({
                         ...p,
                         sold: productSalesMap[p._id || p.id] || 0,
