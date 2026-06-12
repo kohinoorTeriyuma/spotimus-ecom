@@ -12,7 +12,7 @@ export default function Footer() {
               AURA
             </Link>
             <p className="mt-4 text-sm text-stone-500 max-w-sm leading-relaxed">
-              Curated minimal design essentials running as a high-fidelity catalog. Test user registration, secure JWT sessions, and file uploads instantly.
+              Curated minimal design, lifestyle essentials, and premium accessories. Intention in every detail, crafted for the ultimate comfort of modern everyday living.
             </p>
           </div>
 
@@ -28,17 +28,17 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/category/Mobiles" className="text-sm text-stone-600 hover:text-ink transition-colors">
+                <Link to="/category/Mobiles" className="text-sm text-stone-600 hover:text-ink transition-colors font-sans">
                   Mobiles
                 </Link>
               </li>
               <li>
-                <Link to="/category/Laptops" className="text-sm text-stone-600 hover:text-ink transition-colors">
+                <Link to="/category/Laptops" className="text-sm text-stone-600 hover:text-ink transition-colors font-sans">
                   Laptops
                 </Link>
               </li>
               <li>
-                <Link to="/category/Fashion" className="text-sm text-stone-600 hover:text-ink transition-colors">
+                <Link to="/category/Fashion" className="text-sm text-stone-600 hover:text-ink transition-colors font-sans">
                   Fashion
                 </Link>
               </li>
@@ -48,13 +48,13 @@ export default function Footer() {
           {/* Core Tech Stack */}
           <div>
             <h4 className="text-xs font-sans font-semibold uppercase tracking-wider text-stone-400">
-              Curation Standard
+              Our Principles
             </h4>
             <ul className="mt-4 space-y-2 text-sm text-stone-500">
-              <li>React + Context API</li>
-              <li>Node.js + Express</li>
-              <li>JWT Auth</li>
-              <li>Natural Tones Aesthetic</li>
+              <li>Meticulous Sourcing</li>
+              <li>Sustained Durability</li>
+              <li>Minimal Aesthetic</li>
+              <li>Timeless Character</li>
             </ul>
           </div>
         </div>

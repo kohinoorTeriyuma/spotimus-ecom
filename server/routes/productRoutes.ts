@@ -9,6 +9,12 @@ import {
   getProductsByCategory,
 } from "../controllers/productController";
 import { protect, adminProtect } from "../middleware/authMiddleware";
+import {
+  validateIdParam,
+  validateCategoryParam,
+  validateProductCreation,
+  validateProductUpdate
+} from "../middleware/validationMiddleware";
 
 const router = Router();
 
@@ -21,14 +27,37 @@ const upload = multer({
   },
 });
 
-// GET paths are public
+// GET paths are public (validated for security parameters)
 router.get("/", getAllProducts);
-router.get("/:id", getProductById);
-router.get("/category/:category", getProductsByCategory);
+router.get("/:id", validateIdParam as any, getProductById);
+router.get("/category/:category", validateCategoryParam as any, getProductsByCategory);
 
-// Write/Edit operations are protected by logged-in JWT authorization and Admin access checks
-router.post("/", protect as any, adminProtect as any, upload.single("image"), createProduct);
-router.put("/:id", protect as any, adminProtect as any, upload.single("image"), updateProduct);
-router.delete("/:id", protect as any, adminProtect as any, deleteProduct);
+// Write/Edit operations are protected by logged-in JWT authorization, Admin access checks, and thorough body validation
+router.post(
+  "/",
+  protect as any,
+  adminProtect as any,
+  upload.single("image"),
+  validateProductCreation as any,
+  createProduct
+);
+
+router.put(
+  "/:id",
+  validateIdParam as any,
+  protect as any,
+  adminProtect as any,
+  upload.single("image"),
+  validateProductUpdate as any,
+  updateProduct
+);
+
+router.delete(
+  "/:id",
+  validateIdParam as any,
+  protect as any,
+  adminProtect as any,
+  deleteProduct
+);
 
 export default router;

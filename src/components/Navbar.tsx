@@ -51,18 +51,14 @@ export default function Navbar() {
             >
               Products
             </Link>
-
-            {/* Admin actions shortcut */}
             {isAdmin && (
               <Link
-                to="/add-product"
-                className={`text-sm font-medium flex items-center gap-1.5 transition-colors ${
-                  isActive("/add-product") ? "text-black font-semibold" : "text-gray-500 hover:text-black"
+                to="/admin-dashboard"
+                className={`text-sm font-medium transition-colors text-emerald-600 hover:text-emerald-700 ${
+                  isActive("/admin-dashboard") ? "font-semibold underline decoration-2 decoration-emerald-500 underline-offset-4" : ""
                 }`}
-                title="Add New Catalog Product"
               >
-                <PackagePlus className="w-4 h-4 text-emerald-500" />
-                Add Product
+                Dashboard
               </Link>
             )}
           </div>
@@ -175,18 +171,19 @@ export default function Navbar() {
             >
               Products
             </Link>
-
             {isAdmin && (
               <Link
-                to="/add-product"
+                to="/admin-dashboard"
                 onClick={closeMenu}
-                className={`block px-3 py-2 text-base font-medium rounded-lg text-emerald-600 hover:bg-emerald-50 ${
-                  isActive("/add-product") ? "bg-emerald-50 font-semibold" : ""
+                className={`block px-3 py-2 text-base font-medium rounded-lg text-emerald-600 ${
+                  isActive("/admin-dashboard") ? "bg-gray-100 font-semibold" : "hover:bg-gray-50 hover:text-black"
                 }`}
               >
-                + Add Product
+                Admin Dashboard
               </Link>
             )}
+
+
 
             {user ? (
               <>

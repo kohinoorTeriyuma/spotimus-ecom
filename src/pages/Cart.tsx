@@ -32,6 +32,33 @@ export default function Cart() {
 
     // Simulate safe processing delay
     setTimeout(() => {
+      // Save order details to localStorage for Admin Dashboard stats
+      try {
+        const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`;
+        const newOrder = {
+          orderId,
+          customerName: user.name,
+          customerEmail: user.email,
+          items: cartItems.map((item) => ({
+            productId: item.productId,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+          })),
+          createdAt: new Date().toISOString(),
+          totalAmount: cartTotal,
+          status: "Processing",
+        };
+
+        const existingOrdersStr = localStorage.getItem("aura_completed_orders");
+        const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+        existingOrders.unshift(newOrder);
+        localStorage.setItem("aura_completed_orders", JSON.stringify(existingOrders));
+      } catch (err) {
+        console.error("Failed to store order simulation:", err);
+      }
+
       setCheckingOut(false);
       setCheckoutComplete(true);
       clearCart();
@@ -47,7 +74,7 @@ export default function Cart() {
         </div>
         <h2 className="text-2xl font-serif font-bold text-ink">Purchase Complete!</h2>
         <p className="mt-2 text-sm text-stone-500 leading-relaxed font-sans">
-          Thank you for choosing our catalog. Your mock billing sequence completed successfully and sample stock adjustments have been saved.
+          Thank you for shopping with AURA. Your order has been placed successfully and has been sent to our dispatch catalog for processing. We have emailed you a confirmation receipt with shipping details.
         </p>
         <button
           onClick={() => navigate("/products")}

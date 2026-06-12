@@ -12,7 +12,7 @@ const PRE_SEEDED_QUESTIONS = [
   { text: "What curated products are in stock right now?", label: "📦 In stock items" },
   { text: "What is your return policy and the return window?", label: "🔄 Returns policy" },
   { text: "How long is shipping and how much does it cost?", label: "🚚 Shipping speed" },
-  { text: "How does your secure mock checkout system work?", label: "🛒 Checkout guide" },
+  { text: "How does your secure cart checkout system work?", label: "🛒 Checkout guide" },
 ];
 
 export default function AuraBot() {
@@ -31,7 +31,7 @@ export default function AuraBot() {
         {
           id: "greeting",
           role: "model",
-          content: "Hello, I am **Aura**, your curated lifestyle RAG assistant. I am connected directly to our real-time database to search our active inventory! How can I help you find minimal home essentials or clarify our shipping and return policies today?",
+          content: "Hello, I am **Aura**, your curated lifestyle styling assistant. I am connected directly to our boutique catalog and active inventory! How can I help you find minimal design essentials or answer any shipping and order delivery questions today?",
         },
       ]);
     }

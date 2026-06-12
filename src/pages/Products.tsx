@@ -69,7 +69,8 @@ export default function Products() {
 
   return (
     <div className="bg-bg-natural min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-sans" id="products-list-page">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
+
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-sand/45 pb-6">
           <div>

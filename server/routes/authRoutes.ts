@@ -6,12 +6,13 @@ import {
   getUserProfile,
 } from "../controllers/authController";
 import { protect } from "../middleware/authMiddleware";
+import { validateRegister, validateLogin } from "../middleware/validationMiddleware";
 
 const router = Router();
 
-// Public routes
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+// Public routes with validation
+router.post("/register", validateRegister as any, registerUser);
+router.post("/login", validateLogin as any, loginUser);
 router.post("/logout", logoutUser);
 
 // Protected routes

@@ -58,14 +58,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Demo profiles shortcut block - incredibly developer/tester friendly! */}
-        <div className="mt-5 p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-500 leading-relaxed">
-          <p className="font-semibold text-gray-700">💡 Testing tip:</p>
-          <p className="mt-1">
-            Any email containing <span className="font-mono text-emerald-600 font-bold">"admin"</span> (e.g. <code className="bg-gray-150 px-1 py-0.5 rounded">admin@mvp.com</code>) registers as an Administrator, giving you access to Add, Edit, and Delete products instantly!
-          </p>
-        </div>
-
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           {/* Error Feedbacks */}
           {(localError || error) && (

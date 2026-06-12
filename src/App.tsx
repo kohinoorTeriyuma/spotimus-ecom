@@ -20,6 +20,7 @@ import Cart from "./pages/Cart";
 import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export default function App() {
   return (
@@ -66,6 +67,14 @@ export default function App() {
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <EditProduct />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminDashboard />
                     </ProtectedRoute>
                   }
                 />

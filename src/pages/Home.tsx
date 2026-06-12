@@ -54,14 +54,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <span className="inline-block bg-sand text-olive px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full mb-4">
-              New Arrival
+              New Collection
             </span>
             <h1 className="mt-2 text-5xl sm:text-6xl font-serif font-semibold tracking-tight text-ink leading-tight">
               Ethical Living,<br className="hidden sm:inline" />
               Curated for You.
             </h1>
             <p className="mt-5 text-base sm:text-lg text-stone-500 leading-relaxed">
-              Discover our MVP collection of handcrafted home essentials for the modern minimalist. Test user registration, secure JWT validations, and file uploading instantly.
+              Discover a thoughtfully curated collection of handcrafted essentials and timeless objects for the human space. Made for those who appreciate design purity, premium textures, and honest craftsmanship.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <RouterLink
@@ -90,7 +90,7 @@ export default function Home() {
               Browse Categories
             </h2>
             <p className="mt-1 text-sm text-stone-500">
-              Select a curation to view customized product selections.
+              Explore our collection of finely sourced articles by aesthetic focus.
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function Home() {
               Featured Products
             </h2>
             <p className="mt-1 text-sm text-stone-500">
-              Our curated design staples, freshly added.
+              Our latest design classics and essential staples.
             </p>
           </div>
           <RouterLink
@@ -129,7 +129,7 @@ export default function Home() {
           </div>
         ) : featuredProducts.length === 0 ? (
           <div className="text-center py-12 text-sm text-gray-500 bg-white border border-gray-100 rounded-xl mt-6">
-            No products available yet. Register or log in to add items.
+            No products available yet in the boutique.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
@@ -152,9 +152,9 @@ export default function Home() {
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-serif font-semibold text-ink text-base">Swift Local Delivery</h4>
+              <h4 className="font-serif font-semibold text-ink text-base">Carbon-Neutral Shipping</h4>
               <p className="mt-1 text-xs text-stone-500 leading-relaxed font-sans">
-                Experience mock shipping pipelines connecting real-world catalog elements.
+                Each order is thoughtfully packaged with eco-conscious materials and delivered directly to your doorstep.
               </p>
             </div>
           </div>
@@ -163,9 +163,9 @@ export default function Home() {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-serif font-semibold text-ink text-base">Secure JWT Processing</h4>
+              <h4 className="font-serif font-semibold text-ink text-base">Verified Authenticity</h4>
               <p className="mt-1 text-xs text-stone-500 leading-relaxed font-sans">
-                Tokens are encoded server-side and kept secure in private localStorage.
+                We work directly with certified global standard designers and verified artisanal workshops.
               </p>
             </div>
           </div>
@@ -174,9 +174,9 @@ export default function Home() {
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="font-serif font-semibold text-ink text-base">Instant Reversibility</h4>
+              <h4 className="font-serif font-semibold text-ink text-base">Guaranteed Satisfaction</h4>
               <p className="mt-1 text-xs text-stone-500 leading-relaxed font-sans">
-                Delete or re-add catalog products instantly using easy cloud configurations.
+                We believe in the enduring quality of our products and offer a seamless 30-day return policy.
               </p>
             </div>
           </div>
