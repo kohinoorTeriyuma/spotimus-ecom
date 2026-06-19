@@ -142,11 +142,11 @@ export default function Profile() {
             )}
 
             {/* Action controllers */}
-            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-3">
+            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-row flex-wrap justify-center items-center gap-3">
               {isAdmin && (
                 <button
                   onClick={() => navigate("/admin-dashboard")}
-                  className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 active:scale-98 transition shadow-sm text-center cursor-pointer flex items-center justify-center gap-2"
+                  className="w-fit px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 active:scale-98 transition shadow-sm text-center cursor-pointer flex items-center justify-center gap-2"
                   id="admin-dashboard-navigate-btn"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -157,15 +157,15 @@ export default function Profile() {
               )}
               <button
                 onClick={() => navigate("/products")}
-                className="w-full py-2.5 bg-black text-white rounded-xl text-xs font-semibold hover:bg-neutral-800 active:scale-98 transition shadow-sm text-center cursor-pointer flex items-center justify-center gap-2"
+                className="w-fit px-5 py-2.5 bg-black text-white rounded-xl text-xs font-semibold hover:bg-neutral-800 active:scale-98 transition shadow-sm text-center cursor-pointer flex items-center justify-center gap-2"
               >
-                <Eye className="w-4 h-4" /> Explore Active Shopping Catalogs
+                <Eye className="w-4 h-4" /> Explore Catalogue
               </button>
               <button
                 onClick={handleLogout}
-                className="w-full py-2.5 border border-red-200 text-red-600 rounded-xl text-xs font-semibold hover:bg-red-50 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-fit px-5 py-2.5 border border-red-200 text-red-650 hover:bg-red-50 rounded-xl text-xs font-semibold active:scale-98 transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <LogOut className="w-3.5 h-3.5" /> Close Active Session
+                <LogOut className="w-3.5 h-3.5" /> Log Out
               </button>
             </div>
           </div>
@@ -195,12 +195,6 @@ export default function Profile() {
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingProducts ? "animate-spin" : ""}`} />
                   </button>
-                  <Link
-                    to="/add-product"
-                    className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Product
-                  </Link>
                 </div>
               </div>
 

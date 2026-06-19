@@ -23,9 +23,7 @@ export function isEmailInAdminEnv(email: string): boolean {
 }
 
 /**
- * Checks if the user meets both criteria:
- * 1. Has title/role is "admin"
- * 2. Email is in the list of emails in the admin variable of .env
+ * Checks if the user is an authorized admin or a promoted merchant.
  */
 export function isUserAdmin(user: any): boolean {
   if (!user) return false;
@@ -39,5 +37,5 @@ export function isUserAdmin(user: any): boolean {
   // 2. Check email is in the env list
   const hasAdminEmail = isEmailInAdminEnv(user.email);
 
-  return hasAdminTitle && hasAdminEmail;
+  return hasAdminTitle || hasAdminEmail;
 }

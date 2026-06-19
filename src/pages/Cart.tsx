@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useOrderStore } from "../store/useOrderStore";
 import { Trash2, ShoppingBag, Plus, Minus, CreditCard, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function Cart() {
@@ -14,8 +15,16 @@ export default function Cart() {
     cartTotal,
   } = useCart();
 
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const addOrder = useOrderStore((state) => state.addOrder);
   const navigate = useNavigate();
+
+  // If an administrator lands on the shopping cart, automatically redirect them to their workspace
+  useEffect(() => {
+    if (isAdmin) {
+      navigate("/admin-dashboard");
+    }
+  }, [isAdmin, navigate]);
 
   // Checkout modal simulator trigger
   const [checkingOut, setCheckingOut] = useState(false);
@@ -48,13 +57,10 @@ export default function Cart() {
           })),
           createdAt: new Date().toISOString(),
           totalAmount: cartTotal,
-          status: "Processing",
+          status: "Processing" as const,
         };
 
-        const existingOrdersStr = localStorage.getItem("aura_completed_orders");
-        const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
-        existingOrders.unshift(newOrder);
-        localStorage.setItem("aura_completed_orders", JSON.stringify(existingOrders));
+        addOrder(newOrder);
       } catch (err) {
         console.error("Failed to store order simulation:", err);
       }
@@ -229,20 +235,53 @@ export default function Cart() {
             </div>
 
             {/* Simulated Checkout Execution */}
-            <button
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              className="w-full flex items-center justify-center py-3 bg-olive text-white hover:bg-olive-hover font-semibold rounded-full text-sm transition-all shadow-xs active:scale-98 cursor-pointer disabled:bg-stone-300"
-              id="checkout-checkout-btn"
-            >
-              <CreditCard className="w-4 h-4 mr-2" />
-              {checkingOut ? "Processing payment..." : "Secure Checkout"}
-            </button>
+            {!user ? (
+              <div className="space-y-4 pt-2" id="checkout-auth-actions">
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-[18px] text-center space-y-3">
+                  <p className="text-xs font-semibold text-stone-700 font-sans">
+                    Authenticate to complete your purchase
+                  </p>
+                  <p className="text-[11px] text-stone-500 font-sans leading-relaxed">
+                    Log in to your existing account or sign up as a new guest to continue with secure checkout.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-sans">
+                    <Link
+                      to="/login"
+                      state={{ from: { pathname: "/cart" } }}
+                      className="inline-flex items-center justify-center text-xs font-bold py-2.5 bg-white border border-stone-300 text-stone-700 hover:bg-stone-100 rounded-full transition shadow-2xs cursor-pointer active:scale-98"
+                      id="checkout-login-btn"
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      state={{ from: { pathname: "/cart" } }}
+                      className="inline-flex items-center justify-center text-xs font-bold py-2.5 bg-olive text-white hover:bg-olive-hover rounded-full transition shadow-2xs cursor-pointer active:scale-98"
+                      id="checkout-signup-btn"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                </div>
 
-            {!user && (
-              <p className="text-center text-[11px] text-stone-400 font-sans font-medium hover:underline">
-                * Note: You will be redirected to Log In before finalizing.
-              </p>
+                <button
+                  disabled={true}
+                  className="w-full flex items-center justify-center py-3 bg-stone-200 text-stone-400 font-semibold rounded-full text-sm font-sans cursor-not-allowed"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Secure Checkout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleCheckout}
+                disabled={checkingOut}
+                className="w-full flex items-center justify-center py-3 bg-olive text-white hover:bg-olive-hover font-semibold rounded-full text-sm transition-all shadow-xs active:scale-98 cursor-pointer disabled:bg-stone-300"
+                id="checkout-checkout-btn"
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                {checkingOut ? "Processing payment..." : "Secure Checkout"}
+              </button>
             )}
           </div>
         </div>

@@ -7,10 +7,9 @@ export async function connectDB() {
   const mongoUri = process.env.MONGO_URI;
 
   if (!mongoUri) {
-    console.log(
-      "⚠️ MONGO_URI environment variable is missing. Running in local JSON file-based database fallback mode."
+    throw new Error(
+      "❌ DATABASE ERROR: MONGO_URI environment variable is missing. A valid MongoDB connection is required."
     );
-    return false;
   }
 
   if (isConnected || isConnecting) {
@@ -29,11 +28,15 @@ export async function connectDB() {
   } catch (error) {
     isConnecting = false;
     console.error("❌ MongoDB connection error:", error);
-    console.log("⚠️ Falling back to local JSON file-based database mode.");
-    return false;
+    throw new Error(
+      `❌ DATABASE ERROR: Failed to connect to MongoDB: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
 export function isMongoConnected() {
   return isConnected;
 }
+

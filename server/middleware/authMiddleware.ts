@@ -7,8 +7,21 @@ export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  if (!cookieHeader) return cookies;
+  cookieHeader.split(";").forEach((cookie) => {
+    const parts = cookie.split("=");
+    const name = parts[0].trim();
+    if (name) {
+      cookies[name] = parts.slice(1).join("=").trim();
+    }
+  });
+  return cookies;
+}
+
 /**
- * Protects routes from unauthenticated users using Bearer token verification
+ * Protects routes from unauthenticated users using Bearer token verification or Cookie sessions
  */
 export async function protect(
   req: AuthenticatedRequest,
@@ -21,10 +34,14 @@ export async function protect(
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
-    try {
-      // Extract token from Bearer <Token>
-      token = req.headers.authorization.split(" ")[1];
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.headers.cookie) {
+    const cookies = parseCookies(req.headers.cookie);
+    token = cookies["token"];
+  }
 
+  if (token) {
+    try {
       // Decode validation
       const decoded = verifyToken(token);
 
@@ -74,18 +91,10 @@ export function adminProtect(
   const hasAdminTitle = req.user.title?.toLowerCase() === "admin";
   const hasAdminEmail = isEmailInAdminEnv(req.user.email);
 
-  // Combine both checks as requested: "add a feature to add products when the title is admin.
-  // for now take the emails given in the admin variable in the .env file and give access to those emails only."
-  if (!hasAdminTitle) {
+  // Allow access if the user has either the "admin" title/role or their email is whitelisted in the .env file.
+  if (!hasAdminTitle && !hasAdminEmail) {
     res.status(403).json({
-      message: "Access denied. Your profile title must be set as 'admin' to proceed.",
-    });
-    return;
-  }
-
-  if (!hasAdminEmail) {
-    res.status(403).json({
-      message: `Access denied. Your email '${req.user.email}' is not permitted in the .env admin access configuration list.`,
+      message: "Access denied. Your profile title must be 'admin' or your email must be in the .env admin access configuration list.",
     });
     return;
   }

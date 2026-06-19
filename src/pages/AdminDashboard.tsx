@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import API from "../services/api";
 import { Product } from "../types";
+import { useOrderStore, Order } from "../store/useOrderStore";
 import {
   BarChart3,
   TrendingUp,
@@ -23,31 +24,18 @@ import {
   Plus
 } from "lucide-react";
 
-interface OrderItem {
-  productId: string;
-  title: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface Order {
-  orderId: string;
-  customerName: string;
-  customerEmail: string;
-  items: OrderItem[];
-  createdAt: string;
-  totalAmount: number;
-  status: "Processing" | "Shipped" | "Delivered";
-}
-
 export default function AdminDashboard() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // States
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const orders = useOrderStore((state) => state.orders);
+  const updateOrderStatus = useOrderStore((state) => state.updateOrderStatus);
+  const deleteOrderAction = useOrderStore((state) => state.deleteOrder);
+  const clearAllOrdersAction = useOrderStore((state) => state.clearAllOrders);
+  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,14 +50,6 @@ export default function AdminDashboard() {
       // 1. Get products from database
       const prodRes = await API.get("/products");
       setProducts(prodRes.data || []);
-
-      // 2. Load orders from localStorage
-      const storedOrdersStr = localStorage.getItem("aura_completed_orders");
-      if (storedOrdersStr) {
-        setOrders(JSON.parse(storedOrdersStr));
-      } else {
-        setOrders([]);
-      }
     } catch (err) {
       console.error("Dashboard loaded error:", err);
     } finally {
@@ -86,43 +66,42 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, [isAdmin, navigate]);
 
-  // Handle Order Status Mutation
-  const updateOrderStatus = (orderId: string, newStatus: "Processing" | "Shipped" | "Delivered") => {
-    const updated = orders.map((o) => {
-      if (o.orderId === orderId) {
-        return { ...o, status: newStatus };
-      }
-      return o;
-    });
-    setOrders(updated);
-    localStorage.setItem("aura_completed_orders", JSON.stringify(updated));
-  };
+  // Smooth scroll to single product analytics if productId is present in URL query
+  useEffect(() => {
+    const urlProductId = searchParams.get("productId");
+    if (urlProductId) {
+      setTimeout(() => {
+        const element = document.getElementById("single-product-analytics-panel");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 350);
+    }
+  }, [searchParams]);
 
   // Handle Order Deletion
   const deleteOrder = (orderId: string) => {
     if (!window.confirm(`Are you sure you want to dismiss or remove order #${orderId}?`)) {
       return;
     }
-    const filtered = orders.filter((o) => o.orderId !== orderId);
-    setOrders(filtered);
-    localStorage.setItem("aura_completed_orders", JSON.stringify(filtered));
+    deleteOrderAction(orderId);
   };
 
   const clearAllOrders = () => {
     if (!window.confirm("Danger: Proceeding will reset the orders database. Ready?")) {
       return;
     }
-    localStorage.setItem("aura_completed_orders", JSON.stringify([]));
-    setOrders([]);
+    clearAllOrdersAction();
   };
 
   // Calculations
-  // Filter products to ONLY include those posted by the admin (excluding mock/seed products)
-  const adminProducts = products.filter((p) => p.createdBy && p.createdBy !== "system");
+  // Only show products which the currently logged-in admin created
+  const adminProducts = products.filter(
+    (p) => p.createdBy && p.createdBy.toLowerCase().trim() === user?.email?.toLowerCase().trim()
+  );
 
-  // Keep orders that are not mock orders, and filter their items to only include admin's posted products
+  // Track customer checkouts and calculate transaction details over the product list
   const realOrders = orders
-    .filter((o) => !["ORD-9128-44", "ORD-4191-88", "ORD-7281-12"].includes(o.orderId))
     .map((o) => {
       const adminItems = o.items.filter((item) =>
         adminProducts.some((ap) => (ap._id || ap.id) === item.productId)
@@ -201,12 +180,10 @@ export default function AdminDashboard() {
         {/* Banner with controls */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-200/60 pb-6 gap-4">
           <div>
-            <div className="flex items-center gap-2 text-stone-550 mb-1">
+            <div className="flex items-center gap-2 text-stone-550 mb-4">
               <Link to="/profile" className="text-xs hover:underline flex items-center gap-1 font-semibold text-olive/90">
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to Profile
               </Link>
-              <span className="text-gray-300">•</span>
-              <span className="text-xs font-mono bg-stone-100 text-stone-605 px-2 py-0.5 rounded-md">Administration Control</span>
             </div>
             <h1 className="text-3xl font-serif font-semibold tracking-tight text-ink flex items-center gap-2.5">
               <BarChart3 className="w-7 h-7 text-olive" />
@@ -218,14 +195,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex gap-2 flex-wrap items-center">
-            <button
-              onClick={() => fetchDashboardData(true)}
-              disabled={refreshing || loading}
-              className="px-4 py-2 bg-white hover:bg-gray-100/80 border border-gray-200 text-stone-650 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-            >
-              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              Sync Live Status
-            </button>
             <Link
               to="/products"
               className="px-4 py-2 bg-black hover:bg-stone-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
@@ -233,6 +202,14 @@ export default function AdminDashboard() {
               <Package className="w-3.5 h-3.5" />
               Manage Catalogue
             </Link>
+            <button
+              onClick={() => fetchDashboardData(true)}
+              disabled={refreshing || loading}
+              className="p-2 bg-white hover:bg-gray-100/80 border border-gray-200 text-stone-650 rounded-xl flex items-center justify-center transition cursor-pointer disabled:opacity-50"
+              title="Sync Live Status"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
           </div>
         </div>
 
@@ -573,6 +550,241 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* SINGLE PRODUCT ANALYTICS MODULE */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6" id="single-product-analytics-panel">
+              <div className="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-serif font-bold text-gray-900 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-olive" />
+                    Deep Product Metrics & Single Item Analytics
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Select any catalog item to reveal granular customer checkouts, income velocity, and replenishment alerts.
+                  </p>
+                </div>
+
+                {/* Dropdown Selector */}
+                {adminProducts.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-500 font-semibold whitespace-nowrap">Select Item:</span>
+                    <select
+                      value={searchParams.get("productId") || (adminProducts[0]._id || adminProducts[0].id || "")}
+                      onChange={(e) => setSearchParams({ productId: e.target.value })}
+                      className="text-xs px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl outline-none focus:ring-1 focus:ring-olive focus:border-olive cursor-pointer max-w-xs font-semibold"
+                    >
+                      {adminProducts.map((p) => (
+                        <option key={p._id || p.id} value={p._id || p.id}>
+                          {p.title} (${p.price})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Detail Content */}
+              {(() => {
+                const activeProductId = searchParams.get("productId") || (adminProducts.length > 0 ? (adminProducts[0]._id || adminProducts[0].id) : "");
+                const activeProduct = adminProducts.find(p => (p._id || p.id) === activeProductId);
+
+                if (!activeProduct) {
+                  return (
+                    <div className="text-center py-12 text-sm text-stone-400 font-medium">
+                      Please add or select a product to display single item dashboard metrics.
+                    </div>
+                  );
+                }
+
+                const pId = activeProduct._id || activeProduct.id || "";
+                const unitsSold = productSalesMap[pId] || 0;
+                const revenue = unitsSold * activeProduct.price;
+                const stockValue = activeProduct.stock * activeProduct.price;
+                
+                // Get orders containing this product
+                const associatedOrders = realOrders.filter((o) =>
+                  o.items.some((item) => item.productId === pId)
+                );
+
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" id={`single-product-view-${pId}`}>
+                    {/* Column 1: Info and key stats */}
+                    <div className="lg:col-span-1 bg-stone-50/50 rounded-2xl border border-stone-200/50 p-5 space-y-5">
+                      <div className="flex gap-4 items-center">
+                        <img
+                          src={activeProduct.image}
+                          alt={activeProduct.title}
+                          className="w-20 h-20 object-cover rounded-xl border border-stone-200 shadow-2xs bg-white flex-shrink-0 animate-scale-up"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="space-y-1 min-w-0">
+                          <span className="inline-block text-[10px] uppercase font-mono bg-olive/10 text-olive px-2 py-0.5 rounded font-bold">
+                            {activeProduct.category}
+                          </span>
+                          <h4 className="text-sm font-bold text-stone-900 leading-tight truncate" title={activeProduct.title}>
+                            {activeProduct.title}
+                          </h4>
+                          <p className="text-xs font-mono font-bold text-olive">
+                            Unit Price: ${activeProduct.price.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-stone-500 leading-relaxed font-sans line-clamp-3">
+                        {activeProduct.description}
+                      </p>
+
+                      <div className="border-t border-stone-200/60 pt-4 grid grid-cols-2 gap-3">
+                        <div className="bg-white p-3 rounded-xl border border-stone-200/60 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-stone-400">Stock Remainder</p>
+                          <p className="text-lg font-serif font-black text-stone-800 mt-1">{activeProduct.stock} units</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-stone-200/60 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-stone-400">Total Units Sold</p>
+                          <p className="text-lg font-serif font-black text-olive mt-1">{unitsSold} units</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3.5 pt-2">
+                        {/* Status bar */}
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-stone-500 font-semibold">Stock Status:</span>
+                          {activeProduct.stock <= 0 ? (
+                            <span className="text-[10px] font-mono font-bold uppercase text-red-650 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full">Out of Stock</span>
+                          ) : activeProduct.stock <= 3 ? (
+                            <span className="text-[10px] font-mono font-bold uppercase text-amber-705 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full animate-pulse">Critical Low</span>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Optimal Level</span>
+                          )}
+                        </div>
+
+                        {/* Created By */}
+                        <div className="flex justify-between items-center text-xs border-t border-stone-150 pt-3">
+                          <span className="text-stone-500 font-semibold">Publisher:</span>
+                          <span className="text-[11px] font-mono text-stone-605 font-bold truncate max-w-[150px]" title={activeProduct.createdBy}>
+                            {activeProduct.createdBy === "system" ? "Default Catalog" : activeProduct.createdBy}
+                          </span>
+                        </div>
+
+                        {/* Quick action buttons */}
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-150">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/edit-product/${pId}`)}
+                            className="inline-flex justify-center items-center py-2 bg-black hover:bg-stone-800 text-white font-semibold rounded-lg text-xs transition active:scale-98 cursor-pointer"
+                          >
+                            Edit Item
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm(`Delete product "${activeProduct.title}"?`)) {
+                                try {
+                                  await API.delete(`/products/${pId}`);
+                                  // Refresh data
+                                  fetchDashboardData();
+                                } catch (_) {
+                                  alert("Could not delete product.");
+                                }
+                              }
+                            }}
+                            className="inline-flex justify-center items-center py-2 bg-red-50 hover:bg-red-100/85 border border-red-200 text-red-650 font-semibold rounded-lg text-xs transition active:scale-98 cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Performance metrics bento */}
+                    <div className="lg:col-span-2 space-y-6 flex flex-col justify-between">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* REVENUE */}
+                        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <DollarSign className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-mono uppercase font-bold text-stone-500">Gross Item Revenue</p>
+                            <p className="text-xl font-serif font-black text-emerald-800">${revenue.toFixed(2)}</p>
+                          </div>
+                        </div>
+
+                        {/* STOCK VALUE */}
+                        <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Package className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-mono uppercase font-bold text-stone-500">Remaining Inventory Value</p>
+                            <p className="text-xl font-serif font-black text-amber-800">${stockValue.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Orders log table specifically for this product */}
+                      <div className="bg-white border border-stone-200 rounded-[18px] p-4 flex-grow flex flex-col justify-start space-y-3">
+                        <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider font-mono">
+                          Customer Dispatches for this item ({associatedOrders.length} orders)
+                        </h4>
+
+                        {associatedOrders.length === 0 ? (
+                          <div className="flex-grow flex flex-col items-center justify-center py-8 text-center bg-stone-50/50 border border-stone-100/60 rounded-xl">
+                            <Receipt className="w-8 h-8 text-stone-300 mb-2" />
+                            <p className="text-[11px] font-semibold text-stone-400">No client dispatches logged yet.</p>
+                            <p className="text-[9px] text-stone-400 max-w-xs mt-0.5">Purchases checked out with this item in cart will generate logs here.</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto max-h-[160px] scrollbar-none">
+                            <table className="w-full text-left text-xs text-stone-600">
+                              <thead>
+                                <tr className="border-b border-stone-100 text-[10px] font-mono uppercase text-stone-400 pb-2">
+                                  <th className="py-2">Order ID</th>
+                                  <th>Customer Details</th>
+                                  <th className="text-center">Qty bought</th>
+                                  <th className="text-right">Price</th>
+                                  <th className="text-right">Dispatch</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-50">
+                                {associatedOrders.map((o) => {
+                                  const cartItem = o.items.find(item => item.productId === pId);
+                                  const qty = cartItem ? cartItem.quantity : 0;
+                                  const pricePaid = cartItem ? cartItem.price * qty : 0;
+
+                                  return (
+                                    <tr key={o.orderId} className="hover:bg-stone-50/50">
+                                      <td className="py-2.5 font-mono font-bold text-stone-900">#{o.orderId}</td>
+                                      <td>
+                                        <div className="font-semibold text-stone-800 truncate max-w-[150px]">{o.customerName}</div>
+                                        <div className="text-[10px] text-stone-400 truncate max-w-[150px]">{o.customerEmail}</div>
+                                      </td>
+                                      <td className="text-center font-bold text-stone-800">{qty}</td>
+                                      <td className="text-right font-mono font-bold text-stone-900">${pricePaid.toFixed(2)}</td>
+                                      <td className="text-right">
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                                          o.status === "Delivered"
+                                            ? "bg-emerald-50 text-emerald-700"
+                                            : o.status === "Shipped"
+                                            ? "bg-blue-50 text-blue-700"
+                                            : "bg-amber-50 text-amber-700"
+                                        }`}>
+                                          {o.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
           </>

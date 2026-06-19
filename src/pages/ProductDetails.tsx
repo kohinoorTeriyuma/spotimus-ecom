@@ -5,7 +5,8 @@ import { Product } from "../types";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Loader from "../components/Loader";
-import { ArrowLeft, ShoppingBag, Plus, Minus, Tag, ShieldCheck, HelpCircle } from "lucide-react";
+import ProductCard from "../components/ProductCard";
+import { ArrowLeft, ShoppingBag, Plus, Minus, Tag, ShieldCheck, HelpCircle, Zap } from "lucide-react";
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,10 @@ export default function ProductDetails() {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+
+  // States for recommendations
+  const [otherProducts, setOtherProducts] = useState<Product[]>([]);
+  const [otherLoading, setOtherLoading] = useState(true);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -37,6 +42,35 @@ export default function ProductDetails() {
       fetchProduct();
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchOtherProducts = async () => {
+      try {
+        setOtherLoading(true);
+        const res = await API.get("/products");
+        // Filter out the currently selected detail product
+        const filtered = res.data.filter((p: Product) => (p._id || p.id) !== id);
+        setOtherProducts(filtered);
+      } catch (err) {
+        console.error("Error fetching alternative items:", err);
+      } finally {
+        setOtherLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOtherProducts();
+    }
+  }, [id]);
+
+  const handleDeleteOtherProduct = async (productId: string) => {
+    try {
+      await API.delete(`/products/${productId}`);
+      setOtherProducts((prev) => prev.filter((p) => (p._id || p.id) !== productId));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete product.");
+    }
+  };
 
   if (loading) {
     return (
@@ -86,6 +120,13 @@ export default function ProductDetails() {
     }
   };
 
+  const handleBuyNow = () => {
+    if (!isOutOfStock) {
+      addToCart(product, quantity);
+      navigate("/cart");
+    }
+  };
+
   return (
     <div className="bg-bg-natural min-h-screen py-10 px-4 sm:px-6 lg:px-8 font-sans" id="product-detail-view">
       <div className="max-w-6xl mx-auto">
@@ -131,12 +172,12 @@ export default function ProductDetails() {
               </Link>
 
               {/* Title heading */}
-              <h1 className="mt-3 text-3xl sm:text-4xl font-serif font-bold text-ink leading-tight">
+              <h1 className="mt-3 text-2xl sm:text-3xl font-sans font-bold text-stone-900 tracking-tight leading-tight">
                 {product.title}
               </h1>
 
               {/* Price row */}
-              <p className="mt-4 text-2xl sm:text-3xl font-serif font-bold text-ink">
+              <p className="mt-3 text-xl sm:text-2xl font-sans font-bold text-olive">
                 ${product.price.toFixed(2)}
               </p>
 
@@ -153,70 +194,104 @@ export default function ProductDetails() {
 
             {/* Selection adjustments and purchase triggers */}
             <div className="mt-8 pt-6 border-t border-sand/40 space-y-5">
-              {/* Quantities trigger segment */}
-              {!isOutOfStock && (
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-                    Quantity
-                  </span>
-                  <div className="flex items-center border border-sand rounded-full bg-sand/15 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={handleDecrement}
-                      disabled={quantity <= 1}
-                      className="p-2.5 hover:bg-sand/35 text-stone-600 disabled:opacity-40 transition-colors cursor-pointer"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="px-5 font-mono text-sm font-semibold select-none text-ink">
-                      {quantity}
+              {isAdmin ? (
+                /* Administrative Insights & Management Panel */
+                <div className="space-y-4" id="admin-product-details-ctrl">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                      Admin Viewport Active
                     </span>
+                    <span className="text-xs text-stone-500 font-mono">
+                      Stock Level: {product.stock} {product.stock === 1 ? "unit" : "units"} remaining
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
-                      type="button"
-                      onClick={handleIncrement}
-                      disabled={quantity >= product.stock}
-                      className="p-2.5 hover:bg-sand/35 text-stone-600 disabled:opacity-30 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/edit-product/${product._id || product.id}`)}
+                      className="flex-grow py-3 px-6 bg-olive hover:bg-olive-hover text-white rounded-full text-sm font-semibold shadow-xs transition cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+                      id="admin-edit-item-btn"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      Edit Product Details
+                    </button>
+                    <button
+                      onClick={() => navigate("/admin-dashboard")}
+                      className="py-3 px-6 border border-sand/55 text-stone-650 hover:bg-sand/30 rounded-full text-sm font-semibold transition cursor-pointer"
+                      id="admin-go-dashboard-btn"
+                    >
+                      Admin Dashboard
                     </button>
                   </div>
-                  <span className="text-xs text-stone-400 font-mono">
-                    ({product.stock} available in stock)
-                  </span>
                 </div>
+              ) : (
+                /* Standard Costumer Purchase controls */
+                <>
+                  {!isOutOfStock && (
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                        Quantity
+                      </span>
+                      <div className="flex items-center border border-sand rounded-full bg-sand/15 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={handleDecrement}
+                          disabled={quantity <= 1}
+                          className="p-2.5 hover:bg-sand/35 text-stone-600 disabled:opacity-40 transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="px-5 font-mono text-sm font-semibold select-none text-ink">
+                          {quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleIncrement}
+                          disabled={quantity >= product.stock}
+                          className="p-2.5 hover:bg-sand/35 text-stone-600 disabled:opacity-30 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <span className="text-xs text-stone-400 font-mono">
+                        ({product.stock} available in stock)
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={isOutOfStock}
+                      className={`flex-1 py-3 px-6 rounded-full flex items-center justify-center text-sm font-semibold shadow-xs transition-all focus:outline-none cursor-pointer ${
+                        isOutOfStock
+                          ? "bg-sand text-stone-400 cursor-not-allowed"
+                          : added
+                          ? "bg-emerald-650 hover:bg-emerald-700 text-white"
+                          : "bg-white border border-olive text-olive hover:bg-sand/20 active:scale-98"
+                      }`}
+                      id="details-add-cart-btn"
+                    >
+                      <ShoppingBag className="w-4 h-4 mr-2" />
+                      {isOutOfStock
+                        ? "Sold Out"
+                        : added
+                        ? "Added!"
+                        : `Add to Cart`}
+                    </button>
+
+                    {!isOutOfStock && (
+                      <button
+                        onClick={handleBuyNow}
+                        className="flex-1 py-3 px-6 rounded-full bg-olive hover:bg-olive-hover text-white flex items-center justify-center text-sm font-semibold shadow-xs transition-all focus:outline-none cursor-pointer active:scale-98"
+                        id="details-buy-now-btn"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Buy Now
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
-
-              {/* Shopping bag submissions */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isOutOfStock}
-                  className={`flex-grow py-3 px-6 rounded-full flex items-center justify-center text-sm font-semibold text-white shadow-xs transition-all focus:outline-none cursor-pointer ${
-                    isOutOfStock
-                      ? "bg-sand text-stone-400 cursor-not-allowed"
-                      : added
-                      ? "bg-emerald-650 hover:bg-emerald-700"
-                      : "bg-olive hover:bg-olive-hover active:scale-98"
-                  }`}
-                  id="details-add-cart-btn"
-                >
-                  <ShoppingBag className="w-4 h-4 mr-2" />
-                  {isOutOfStock
-                    ? "Sold Out"
-                    : added
-                    ? "Successfully Added!"
-                    : `Add ${quantity} to Shopping Cart`}
-                </button>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => navigate(`/edit-product/${product._id || product.id}`)}
-                    className="py-3 px-6 border border-sand/50 text-stone-650 rounded-full text-sm font-semibold hover:bg-sand/30 transition cursor-pointer"
-                  >
-                    Edit Item
-                  </button>
-                )}
-              </div>
 
               {/* Safe assurances flags */}
               <div className="flex bg-sand/25 border border-sand/30 rounded-[16px] p-3 items-center text-xs text-stone-500 gap-2 font-sans">
@@ -225,6 +300,36 @@ export default function ProductDetails() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Other products recommendation area */}
+        <div className="mt-16 border-t border-sand/35 pt-12 mb-10" id="other-listings-recommendations">
+          <div className="flex flex-col mb-6">
+            <h2 className="text-lg font-sans font-bold text-stone-900 tracking-tight">
+              More Products to Explore
+            </h2>
+            <p className="text-xs text-stone-500 mt-1">
+              Browse similar high-quality selections available in our store.
+            </p>
+          </div>
+
+          {otherLoading ? (
+            <div className="py-12 flex justify-center">
+              <Loader size="md" />
+            </div>
+          ) : otherProducts.length === 0 ? (
+            <p className="text-xs text-stone-400 italic">No alternative products available to display.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+              {otherProducts.map((p) => (
+                <ProductCard
+                  key={p._id || p.id}
+                  product={p}
+                  onDelete={handleDeleteOtherProduct}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

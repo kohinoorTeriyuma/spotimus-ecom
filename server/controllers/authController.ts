@@ -47,6 +47,14 @@ export async function registerUser(req: Request, res: Response): Promise<void> {
     // Generate JWT Token
     const token = generateToken(newUser._id || newUser.id);
 
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "lax",
+    });
+
     res.status(201).json({
       token,
       user: {
@@ -103,6 +111,14 @@ export async function loginUser(req: Request, res: Response): Promise<void> {
     // Generate JWT Token
     const token = generateToken(user._id || user.id);
 
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "lax",
+    });
+
     res.status(200).json({
       token,
       user: {
@@ -120,10 +136,15 @@ export async function loginUser(req: Request, res: Response): Promise<void> {
 }
 
 /**
- * @desc Logout user (Client-side clears localStorage, server acts as 200)
+ * @desc Logout user (Client-side clears cookies and state, server acts as 200)
  * @route POST /api/auth/logout
  */
 export async function logoutUser(req: Request, res: Response): Promise<void> {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
   res.status(200).json({ message: "Successfully logged out." });
 }
 
@@ -162,5 +183,40 @@ export async function getUserProfile(
     res
       .status(500)
       .json({ message: error.message || "Failed to match profile user." });
+  }
+}
+
+/**
+ * @desc Promote current user to admin
+ * @route POST /api/auth/make-admin
+ */
+export async function promoteToAdmin(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Not authenticated. Please log in or register." });
+      return;
+    }
+
+    const userId = req.user._id || req.user.id;
+    const updatedUser = await User.findByIdAndUpdate(userId, { title: "admin" });
+
+    res.status(200).json({
+      message: "Successfully promoted to administrator status.",
+      user: {
+        id: updatedUser._id || updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        title: "admin",
+        createdAt: updatedUser.createdAt,
+      },
+    });
+  } catch (error: any) {
+    console.error("Promote to admin controller error:", error);
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to promote to admin." });
   }
 }
