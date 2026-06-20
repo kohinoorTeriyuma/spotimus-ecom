@@ -9,6 +9,10 @@ import productRoutes from "./server/routes/productRoutes";
 import chatRoutes from "./server/routes/chatRoutes";
 import { errorHandler } from "./server/middleware/errorHandler";
 
+import dns from "dns";
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+
 dotenv.config();
 
 const SEED_PRODUCTS = [
