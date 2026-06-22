@@ -6,8 +6,7 @@
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/b9fe8e34-15ce-4121-9c44-3e112bfd0c15
-
+link:  https://spotimus-ecom.onrender.com
 ## Run Locally
 
 **Prerequisites:**  Node.js
